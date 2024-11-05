@@ -6,22 +6,36 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/23 11:29:10 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 11:43:09 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
 #include "HttpRequest.hpp"
 
+////////////////////////////////////////////////////////////////////////////////
+// Private methods Constructor
+////////////////////////////////////////////////////////////////////////////////
+
 HttpRequest::HttpRequest()
-	: _body(""), _type(NONE), _content(false, NOT_SET)
+	: _body(""), _type(NONE), _contentLength(false, NOT_SET)
 {
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Public methods Constructor
+////////////////////////////////////////////////////////////////////////////////
+
+/// @brief Constructs an HttpRequest object, initializing and parsing the given request data.
+/// @param data The raw HTTP request data read by the server, typically from a browser request.
+/// 
+/// This constructor initializes the HttpRequest object and parses the provided request data
+/// to populate its attributes, including the request type, body, and content length. The 
+/// parse result is indicated in the console output for debugging purposes.
 HttpRequest::HttpRequest(std::string& data)
-	: _body(""), _type(NONE), _content(false, NOT_SET)
+	: _body(""), _type(NONE), _contentLength(false, NOT_SET)
 {
-	/// FIXME: check logic
+	/// FIXME: check logic to `_parseHttpRequestHeader`
 	if (parse(data))
 		std::cout << "TEST | HttpRequest | parse success" << std::endl;
 	else
@@ -53,6 +67,42 @@ bool HttpRequest::parse(const std::string& requestData)
 	return (true);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// TODO: change to this logic for parsing the request
+
+bool	HttpRequest::_parseHttpRequestHeader(const std::string& data)
+{
+	std::istringstream	iss(data);
+	std::string			readline;
+
+	if (data.empty())
+		return (false);
+	if (!std::getline(iss, readline))
+		return (false);
+	if (!_parseRequestLine(readline))
+		return (false);
+	if (_parseHeaders(_convertPartToHeaders(iss)))
+		return (true);
+	return (false);
+}
+
+bool	HttpRequest::parseHttpRequestBody(const std::string& data)
+{
+	if (!hasBody())
+		return (true);
+	if (getContentLength() <= 0)
+		return (false);
+	if (_headers["Content-Type"] == "application/json" || _headers["Content-Type"] == "text/plain")
+		setBody(data, RAW);
+	else if (_headers["Transfer-Encoding"] == "chunked")
+		setBody(data, CHUNKED);
+	else if (_headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+		setBody(data, FORM_DATA);
+	return (true);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 bool	HttpRequest::_processRequestBody(const std::string& bodyLines)
 {
 	if (!hasBody())
@@ -67,46 +117,6 @@ bool	HttpRequest::_processRequestBody(const std::string& bodyLines)
 		setBody(bodyLines, FORM_DATA);
 	return (true);
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-/// @example POST request with chunked body
-POST /upload HTTP/1.1
-Host: example.com
-Transfer-Encoding: chunked
-Content-Type: text/plain
-
-7\r\n
-Mozilla\r\n
-9\r\n
-Developer\r\n
-7\r\n
-Network\r\n
-0\r\n
-\r\n
-*/
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-/// @example POST request with multipart/form-data
-POST /upload HTTP/1.1
-Host: example.com
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="text"
-
-Hello, World!
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="example.txt"
-Content-Type: text/plain
-
-(File content here)
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
-*/
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief Separate the request data into request line, headers, and body.
@@ -145,7 +155,6 @@ std::vector<std	::string> HttpRequest::_convertPartToHeaders(std::istringstream&
 std::string HttpRequest::_convertPartToBodyLines(std::istringstream& iss)
 {
 	std::string					readline;
-	// std::vector<std::string>	drafts;
 	std::string					drafts;
 
 	while (std::getline(iss, readline))
@@ -196,7 +205,7 @@ bool HttpRequest::_parseHeaders(const std::vector<std::string> &headerLines)
 		_headers.insert(std::make_pair(key, value));
 	}
 	if (_headers.find("Content-Length") != _headers.end())
-		_content = std::make_pair(true, toSizeT(_headers["Content-Length"]));
+		_contentLength = std::make_pair(true, toSizeT(_headers["Content-Length"]));
 	return (true);
 }
 
@@ -259,7 +268,7 @@ std::string	HttpRequest::getBody() const
 
 size_t	HttpRequest::getContentLength() const
 {
-	return (_content.second);
+	return (_contentLength.second);
 }
 
 
@@ -289,7 +298,7 @@ void	HttpRequest::setHeaders(const std::map<std::string, std::string>& headers)
 
 bool	HttpRequest::hasBody() const
 {
-        return (_content.first);
+        return (_contentLength.first);
 }
 
 void	HttpRequest::setBody(const std::vector<std::string>& bodyLines, e_body_type type)
@@ -322,5 +331,5 @@ void	HttpRequest::setBody(const std::string& bodyLines, e_body_type type)
 void	HttpRequest::setContentLength(const ssize_t& contentLength)
 {
 	if (hasBody())
-		_content.second = contentLength;
+		_contentLength.second = contentLength;
 }

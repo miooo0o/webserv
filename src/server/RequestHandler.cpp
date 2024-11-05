@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/23 11:32:44 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 11:50:19 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,16 +65,20 @@ bool	RequestHandler::_isCGIReqeust(const Context& context) const
 
 
 	std::map<std::string, std::string> cgiMap = context.getLocation().getCgi();
-	std::cout << YELLOW << "TEST | location.getCgi()\n" << RESET << std::endl;
+	
+	std::cout << YELLOW << "TEST | location.getCgi(): " << RESET << std::flush;
+	if (context.getLocation().getCgi().empty())
+	{
+		std::cout << YELLOW << "No CGI configurations found." << RESET << std::endl;
+		return (false);
+	}
+	std::cout << YELLOW << "CGI configurations found." << RESET << std::endl;
+
+
 	for (std::map<std::string, std::string>::const_iterator it = cgiMap.begin(); it != cgiMap.end(); ++it)
 	{
-    	std::cout << YELLOW << "       key: " << it->first << " -> value: " << it->second << RESET << std::endl;
+    	std::cout << YELLOW << " CGI       key: " << it->first << " -> value: " << it->second << RESET << std::endl;
 	}
-	std::cout << YELLOW << "     --- cgi map end" << RESET << std::endl;
-	
-
-	if (context.getLocation().getCgi().empty())
-		return (false);
 	return (true);
 }
 

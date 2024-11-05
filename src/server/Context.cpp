@@ -73,7 +73,8 @@ void	Context::setLocation(Location& location)
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Prototype to test TODO: Remove
+/// Prototype to test
+// TODO: Remove
 void	test_different_path(const std::map<std::string, Location*>& locations);
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -87,7 +88,7 @@ void	test_different_path(const std::map<std::string, Location*>& locations);
 /// if location has = "/", "/path/", "/path/to/"
 ///	and	uri = 
 ///		- "/"					=> returns the default root location object.
-///		- "/path"				=> returns the location object for "/".
+///		- "/path"				=> returns the location object for "/path/".
 ///		- "/path/"				=> returns the location object for "/path/".
 ///		- "/path//////to/dir/"	=> returns the location object for "/path/to/".
 ///		- "/path/to//////////// => returns the location object for "/path/to/".
@@ -97,7 +98,7 @@ Location&	Context::_findLocation(Context& context) const
 	std::map<std::string, Location*>	locations = _serverConfig.map_locationObjs;
 
 
-	//// Test function
+	// TODO: Remove Test function 
 	// test_different_path(locations);
 
 	std::string	matchedLocation = getMatchedLocation(uri, locations);
@@ -158,9 +159,9 @@ std::string	getParentPath(const std::string& path)
 
 	std::string trimmedPath = path;
 
-	if (trimmedPath.length() > 1 && trimmedPath[trimmedPath.length() - 1] == '/') // while? if?
+	if (trimmedPath.length() > 1 && trimmedPath[trimmedPath.length() - 1] == '/')
 		trimmedPath.erase(trimmedPath.length() - 1);
-	std::cout << "trimmedPath: " << trimmedPath << std::endl;
+	// std::cout << "trimmedPath: " << trimmedPath << std::endl;
 	
 	std::string::size_type lastSlashPos = trimmedPath.find_last_of('/');
 	if (lastSlashPos == std::string::npos)
@@ -176,13 +177,16 @@ std::string normalisePath(const std::string& path)
 
 	while (normalisedPath.find("//") != std::string::npos)
 		normalisedPath.replace(normalisedPath.find("//"), 2, "/");
+	if (normalisedPath.length() > 1 && normalisedPath[normalisedPath.length() - 1] != '/')
+		normalisedPath += "/";
 	return (normalisedPath);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Test Functions for the Context class | TODO: Remove
+/// TODO: Remove 
+/// Test Functions for the Context class 
 ////////////////////////////////////////////////////////////////////////////////
 void test_path_unit(const std::string& path, const std::map<std::string, Location*>& locations)
 {
@@ -196,7 +200,9 @@ void test_different_path(const std::map<std::string, Location*>& locations)
 {
 	test_path_unit("/", locations);
 	test_path_unit("///////////////", locations);
+	test_path_unit("/image", locations);
 	test_path_unit("/image/", locations);
+	test_path_unit("/images", locations);
 	test_path_unit("/images/", locations);
 	test_path_unit("/images//////////////////", locations);
 	test_path_unit("/images/not_exist/", locations);

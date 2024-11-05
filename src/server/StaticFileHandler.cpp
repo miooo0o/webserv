@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/23 10:29:02 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 11:27:17 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,6 +94,8 @@ int	StaticFileHandler::_verifyHeaders(const Context& context) const
 	const std::string&							method = context.getRequest().getMethod();
 	const std::map<std::string, std::string>&	headers = context.getRequest().getHeaders();
 
+	std::cout << RED << "TEST | HttpRequest->_uri: " << context.getRequest().getUri() << RESET << std::endl;
+
 	if (method == "GET")
 		return (_validateGetHeaders(headers));
 	else if (method == "POST")
@@ -151,7 +153,9 @@ HttpResponse StaticFileHandler::_handleDirRequest(const Context& context)
 	Context&	moditiedContext = const_cast<Context&>(context);
 	
 	_setHandledPath(_buildAbsolutePathWithIndex(context));
-	std::cout << " absolute path that with index is built: " << _handledPath << std::endl;
+
+	std::cout << CYAN << "TEST | diractory: StaticFileHandler->_handledpath: " << _handledPath << RESET << std::endl;
+	
 	if (!isFile(_handledPath))
 		return (_handleNotFound(context));
 	modifiedRequest.setUri(getFullPath());
@@ -286,7 +290,7 @@ std::string StaticFileHandler::_buildPathWithUri(const Context& context) const
 		throw std::runtime_error("Root path is empty");
 	std::string fullPath = "." + serverRoot + locationRoot + context.getRequest().getUri();
 
-	std::cout << "TEST | absolute path that is built: " << fullPath << std::endl;
+	std::cout << CYAN << "TEST | URI build: absolute path: " << fullPath << RESET << std::endl;
 
 	return(fullPath);
 }

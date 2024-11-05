@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/23 11:19:30 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 11:43:27 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ struct ReadedLines
 {
     std::string					request;
     std::vector<std::string>	headers;
-    std::string	bodyLines;
+    std::string					bodyLines;
 };
 
 
@@ -45,18 +45,17 @@ public:
 	};
 
 public:
-
-	HttpRequest();
 	HttpRequest(std::string& data);
 	~HttpRequest();
-	bool								parse(const std::string& requestData);
+	bool								parse(const std::string& data);
+	bool								parseHttpRequestBody(const std::string& data);
+
 	
 	std::string							getMethod() const;
 	std::string							getUri() const;
 	std::string							getVersion() const;
 	std::map<std::string, std::string>	getHeaders() const;
 	std::string							getBody() const;
-	
 	size_t								getContentLength() const;
 	
 	void								setUri(const std::string& uri);
@@ -73,16 +72,26 @@ public:
 	static std::string					trim(const std::string& str);
 	
 private:
+	HttpRequest();
+	
+	bool								_parseHttpRequestHeader(const std::string& data);
+
+	
+															// request line come like:
+															// GET /index.html HTTP/1.1
+															
 	std::string							_method;			// GET, POST, DELETE
-	std::string							_uri;				//
+	std::string							_uri;				// request uri
 	std::string							_version;			// HTTP/1.1
 	std::map<std::string, std::string>	_headers;			// key: value
 	std::string							_body;				// raw, chunked, formdata
 	e_body_type							_type;				// type of body @see e_body_type
-	std::pair<bool, size_t>				_content;		// from Headers["Content-Length"], if not found NOT_SET -1
-
+	std::pair<bool, size_t>				_contentLength;		// from Headers["Content-Length"],
+															// bool:	if found `true`, not found `false`
+															// size_t:	value of Content-Length, if not found, NON_SET (-1)
 	
-	ReadedLines							_splitRequestData(const std::string& requestData);
+	
+	ReadedLines							_splitRequestData(const std::string& data);
 	
 	bool								_processRequestBody(const std::string& bodyLines);
 	bool								_parseRequestLine(const std::string& requestLine);
