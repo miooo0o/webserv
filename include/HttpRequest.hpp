@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/05 11:43:27 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 12:45:35 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ public:
 		RAW,
 		CHUNKED,
 		FORM_DATA,
+		URL_ENCODED,
 		NONE
 	};
 

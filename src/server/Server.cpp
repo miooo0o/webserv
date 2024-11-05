@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sanghupa <sanghupa@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:46 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/30 23:00:06 by sanghupa         ###   ########.fr       */
+/*   Updated: 2024/11/05 13:01:46 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -204,15 +204,21 @@ int	Server::_handleClientData(int target, size_t i)
 
 	std::string	requestData(buffer, count);
 
+	std::cout << 
 	std::cout << YELLOW << "TEST | requestData (server.cpp, buffer to std::string)" << std::endl;
 	std::cout << "buffer: " << count << ", string size: "<< requestData.size() << std::endl;
-	std::cout << RESET << "\nrequestData\n\n" << YELLOW << requestData << "\n\n" << RESET << std::endl;
+	std::cout << RESET 
+			<< "-------------------------------------request data-------------------------------------\n" 
+			<< YELLOW << requestData 
+			<< "--------------------------------------------------------------------------------------\n\n" 
+			<< RESET << std::endl;
 
 	HttpRequest		request(requestData);
 
 	// test line: POST, bad request
 	// request.setMethod("POST");
 	// request.setContentLength(10);
+	
 	
 	Context			contextFromTarget(serverConfig, request);
 	HttpResponse	response = _requestHandler.handleRequest(contextFromTarget);

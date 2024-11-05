@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/05 11:43:09 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/05 12:55:04 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,6 +115,16 @@ bool	HttpRequest::_processRequestBody(const std::string& bodyLines)
 		setBody(bodyLines, CHUNKED);
 	else if (_headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 		setBody(bodyLines, FORM_DATA);
+	else if (_headers["Content-Type"].find("application/x-www-form-urlencoded") != std::string::npos)
+	{
+		std::string trimed = bodyLines;
+		if (!bodyLines.empty()&&bodyLines[bodyLines.length()-1] == '\n')
+			trimed = bodyLines.substr(0, bodyLines.length()-1);
+		setBody(trimed, URL_ENCODED);
+	}
+	else
+		throw std::runtime_error(
+			"HTTP method [" + getMethod() + "] at URI [" + getUri() + "] encountered an unsupported Content-Type: " + _headers["Content-Type"]);
 	return (true);
 }
 

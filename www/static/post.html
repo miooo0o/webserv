@@ -8,13 +8,13 @@
 </head>
 <body>
     <h1>Test POST Request</h1>
-    <form action="http://localhost" method="POST">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-        <br><br>
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <br><br>
+    <form action="http://localhost:8080/test" method="POST">
+        <label for="param1">Parameter 1:</label>
+        <input type="text" id="param1" name="param1" value="value1">
+        
+        <label for="param2">Parameter 2:</label>
+        <input type="text" id="param2" name="param2" value="value2">
+        
         <input type="submit" value="Submit">
     </form>
 </body>
