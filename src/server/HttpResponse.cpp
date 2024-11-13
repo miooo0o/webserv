@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/13 02:40:03 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/14 00:43:40 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -469,6 +469,7 @@ void	HttpResponse::setBody(const std::string bodyContent)
 {
 	_body = bodyContent;
 	_bodyLength = static_cast<size_t>(_body.size());
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

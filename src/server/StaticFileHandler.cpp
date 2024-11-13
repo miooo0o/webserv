@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/13 16:18:10 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/14 00:42:56 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,12 +58,19 @@ StaticFileHandler::~StaticFileHandler()
 HttpResponse StaticFileHandler::handleGet(const Context& context)
 {
 	_initMimeTypes();
-	int status = _verifyHeaders(context);
+	int		status = _verifyHeaders(context);
+
+	// FIXME: delete this line
+	std::cout << RED << context.getRequest().getUri() << RESET << std::endl;
+
 	if (HttpResponse::checkStatusRange(status) != STATUS_SUCCESS)
 		return (HttpResponse::createErrorResponse(status, context));
 	if (context.getRequest().getUri() == "/")
 		return (_handleRoot(context));
-	_setRelativePath(_buildPathWithUri(context));
+	if (context.getRequest().getUri() == "/uploads")
+			return (handleUploadsRequest(context));
+	else
+		_setRelativePath(_buildPathWithUri(context));
 	if (isDir(_relativePath))
 	{
 		if (context.getLocation().isListdir())
@@ -74,6 +81,91 @@ HttpResponse StaticFileHandler::handleGet(const Context& context)
 		return (_handleFileRequest(context));
 	return (_handleNotFound(context));
 }
+
+
+
+HttpResponse StaticFileHandler::handleUploadsRequest(const Context& context)
+{
+    _setRelativePath("./www/data/uploads/");
+    std::cout << "Handling /uploads request" << std::endl;
+
+    if (!isDir(_relativePath)) {
+        std::cerr << "Error: Path is not a directory: " << _relativePath << std::endl;
+        return HttpResponse::createErrorResponse(404, context);
+    }
+
+    // Get list of files in the directory
+    std::vector<std::string> files = listDir(_relativePath);
+
+    // Generate JSON response
+    std::stringstream jsonResponse;
+    jsonResponse << "[";
+    for (size_t i = 0; i < files.size(); ++i) {
+        jsonResponse << "\"" << files[i] << "\"";
+        if (i < files.size() - 1) jsonResponse << ",";
+    }
+    jsonResponse << "]\r\n";
+
+	std::cout << "TEST | JSON | " << jsonResponse.str() << std::endl;
+    // Respond with JSON
+    HttpResponse resp(context);
+    resp.setBody(jsonResponse.str());
+    resp.setDefaultHeaders();
+    resp.setHeader("Content-Type", "application/json");
+    return resp;
+}
+
+std::vector<std::string> StaticFileHandler::listDir(const std::string& path) {
+    std::vector<std::string> files;
+    DIR* dir = opendir(path.c_str());
+    if (!dir) {
+        std::cerr << "Error opening directory: " << path << std::endl;
+        return files;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string name = entry->d_name;
+        if (name != "." && name != "..") {
+            files.push_back(name);
+        }
+    }
+    closedir(dir);
+    return files;
+}
+
+std::string StaticFileHandler::generateUploadsHtml(const std::vector<std::string>& files) {
+    std::stringstream html;
+    html << "<html><body>";
+    html << "<h1>Uploads Directory</h1>";
+
+    // 파일 목록을 HTML로 변환
+    for (std::vector<std::string>::const_iterator it = files.begin(); it != files.end(); ++it) {
+        html << "<div>";
+        html << "<a href=\"/uploads/" << *it << "\">" << *it << "</a>";
+        html << " <button onclick=\"deleteFile('" << *it << "')\">Delete</button>";
+        html << "</div>";
+    }
+
+    // JavaScript 추가
+    html << "<script>";
+    html << "async function deleteFile(filename) {";
+    html << "    if (confirm('Are you sure you want to delete ' + filename + '?')) {";
+    html << "        const response = await fetch('/delete?file=' + encodeURIComponent(filename), { method: 'DELETE' });";
+    html << "        if (response.ok) {";
+    html << "            alert('File deleted successfully');";
+    html << "            window.location.reload();";
+    html << "        } else {";
+    html << "            alert('Failed to delete the file');";
+    html << "        }";
+    html << "    }";
+    html << "}";
+    html << "</script>";
+
+    html << "</body></html>";
+    return html.str();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Public methods: handlepost
@@ -101,14 +193,16 @@ HttpResponse StaticFileHandler::handleDelete(const Context& context)
 	if (HttpResponse::checkStatusRange(status) != STATUS_SUCCESS)
 		return (HttpResponse::createErrorResponse(status, context));
 	
-	// TODO: check logic for delete
-	_setRelativePath(_buildPathWithUri(context));
+	_setRelativePath(_buildUploadPath(context));
 	if (isFile(_relativePath) || isDir(_relativePath))
 	{
 		if (!hasWritePermission(_relativePath))
 			return (HttpResponse::forbidden_403(context));
 		if (!hasReadPermission(_relativePath) && deleteFileOrDir(_relativePath))
 			return (HttpResponse::noContent_204(context));
+		// TODO: implement "delete"
+
+		
 		return (HttpResponse::internalServerError_500(context));
 	}
 	return (_handleNotFound(context));
@@ -158,16 +252,6 @@ HttpResponse StaticFileHandler::_handleFormDataBody(const Context& context)
     if (writeFile(filePath, formData.getContent()))
         return (HttpResponse::created_201(context, FormData::clearFileName(formData.getFilename())));
     return (HttpResponse::internalServerError_500(context));
-}
-
-bool StaticFileHandler::writeFile(const std::string& filePath, const std::string& content) const
-{
-	std::ofstream file(filePath.c_str());
-	if (!file.is_open())
-		return (false);
-	file << content;
-	file.close();
-	return (true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -336,6 +420,9 @@ HttpResponse StaticFileHandler::_createDirListingResponse(const Context& context
 	resp.setDefaultHeaders();
 	return (resp);
 }
+
+
+
 
 /// @brief Generates an HTML page with a directory listing.
 /// @param path 

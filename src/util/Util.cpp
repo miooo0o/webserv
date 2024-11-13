@@ -66,8 +66,6 @@ size_t		toSizeT(const std::string& value)
 	return (result);
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /// Utility functions: File, Directory
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,15 +95,14 @@ bool	isDir(const std::string path)
 	return (false);
 }
 
-bool	createFile(const std::string& path)
+bool	writeFile(const std::string& filePath, const std::string& content)
 {
-	std::ofstream	file(path.c_str());
-	if (file.is_open())
-	{
-		file.close();
-		return (true);
-	}
-	return (false);
+	std::ofstream file(filePath.c_str());
+	if (!file.is_open())
+		return (false);
+	file << content;
+	file.close();
+	return (true);
 }
 
 bool	deleteFile(const std::string& path)
@@ -321,9 +318,6 @@ std::string FormData::_extractReqeustLine(const std::string& requestBody, const 
 	std::string::size_type pos = requestBody.find("\r\n", fullBoundary.size()) + 2;
 	std::string::size_type nextPos = requestBody.find(fullBoundary, pos);
 
-	std::cout << "fullBoundary: " << fullBoundary << std::endl;
-	std::cout << "pos: " << pos << std::endl;
-	std::cout << "nextPos: " << nextPos << std::endl;
 	if (!_hasOneData(pos, nextPos))
 		return ("");
 	return (requestBody.substr(pos, nextPos - pos));
@@ -396,8 +390,6 @@ std::string FormData::getContentType() const
 					 _headers.find("Content-Type");
 	return ((it != _headers.end()) ? it->second : "");
 }
-
-
 
 std::ostream& operator<<(std::ostream& os, const FormData& formData)
 {

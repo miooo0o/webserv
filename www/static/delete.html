@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploads Directory</title>
+    <script>
+        async function loadFiles() {
+            try {
+                const response = await fetch('/uploads');
+                if (!response.ok) {
+                    throw new Error(`Failed to load files: ${response.status}`);
+                }
+                const files = await response.json(); // 파일 목록을 JSON으로 가정
+
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+                files.forEach(file => {
+                    const fileElement = document.createElement('div');
+                    fileElement.innerHTML = `
+                        <a href="/uploads/${file}" target="_blank">${file}</a>
+                        <button onclick="deleteFile('${file}')">Delete</button>
+                    `;
+                    fileList.appendChild(fileElement);
+                });
+            } catch (error) {
+                console.error(error);
+                alert('Error loading files.');
+            }
+        }
+
+        async function deleteFile(filename) {
+            if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+            try {
+                const response = await fetch(`/delete?file=${encodeURIComponent(filename)}`, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) {
+                    throw new Error(`Failed to delete file: ${response.status}`);
+                }
+                alert('File deleted successfully');
+                loadFiles(); // 삭제 후 파일 목록 새로고침
+            } catch (error) {
+                console.error(error);
+                alert('Error deleting file.');
+            }
+        }
+
+        // 페이지 로드 시 파일 목록 가져오기
+        document.addEventListener('DOMContentLoaded', loadFiles);
+    </script>
+</head>
+<body>
+    <h1>Uploads Directory</h1>
+    <div id="file-list">Loading files...</div>
+</body>
+</html>

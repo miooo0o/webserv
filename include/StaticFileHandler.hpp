@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/13 02:05:51 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/14 00:22:56 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,9 +92,13 @@ private:
 
 	void			_setRelativePath(const std::string& resolvedPath);
 
-	// FormData parsing methods : multipart/form-data
-	bool isValidRequest(const std::map<std::string, std::string>& headers, const std::string& body) const;
-    bool writeFile(const std::string& filePath, const std::string& content) const;
+
+
+HttpResponse handleUploadsRequest(const Context& context);
+std::vector<std::string> listDir(const std::string& path);
+std::string generateUploadsHtml(const std::vector<std::string>& files);
+
 };
+
 
 #endif

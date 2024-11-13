@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:46 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/13 16:27:33 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/14 00:49:53 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -184,45 +184,12 @@ int	Server::_acceptNewConnection(int target)
 	return (1);
 }
 
-
-ssize_t Server::_receiveData(int target, std::string& str)
-{
-    ssize_t count = 0;
-    ssize_t readSize = 0;
-    char buffer[1024]; // Buffer for receiving data
-
-	 while (true)
-	{
-		count = recv(target, buffer, sizeof(buffer) - 1, 0);// Use recv instead of read
-        if (count > 0)
-		{
-            buffer[count] = '\0'; // Null-terminate the received data
-            str.append(buffer, count); // Append to the string
-            readSize += count; // Track the total bytes received
-
-            // Optional: If the protocol has a way to signal the end of data (e.g., Content-Length, etc.), you can add a check here.
-            // Example for Content-Length parsing would go here.
-        } else if (count == 0) {
-            // Client closed the connection
-           return (0);
-        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // Non-blocking mode: No more data available, wait for poll/select
-           return (0);
-        } else {
-            // Real error occurred
-            perror("Error receiving data");
-            return (-1);
-        }
-    }
-    return (readSize); // Return the total size of received data
-}
 int	Server::_handleClientData(int target, size_t i)
 {
 	ServerConfig&	serverConfig = _fetchConfig(target);
 
-	
-	std::string		readed;
-	ssize_t			count = _receiveData(target, readed);
+	char buffer[serverConfig.max_body_size];
+	ssize_t			count = read(target, buffer, sizeof(buffer));
 
 	if (count <= 0)
 	{
@@ -231,7 +198,8 @@ int	Server::_handleClientData(int target, size_t i)
 		_pollfds.erase(_pollfds.begin() + i);
 		return (0);
 	}
-
+	
+	std::string		readed(buffer, count);
 	std::cout << YELLOW << "TEST | requestData (server.cpp, buffer to std::string)" << std::endl;
 	std::cout << "buffer: " << count << ", string size: "<< readed.size() << std::endl;
 	std::cout << RESET << "\nrequestData\n\n" << YELLOW << readed << "\n\n" << RESET << std::endl;

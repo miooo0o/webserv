@@ -25,7 +25,7 @@ bool	createDir(const std::string& path);
 bool	deleteDir(const std::string& path);
 
 bool	isFile(const std::string path);
-bool	createFile(const std::string& path);
+bool	writeFile(const std::string& filePath, const std::string& content);
 bool	deleteFile(const std::string& path);
 
 bool	hasWritePermission(const std::string& path);
