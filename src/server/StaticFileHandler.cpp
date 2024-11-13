@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/13 02:34:22 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 16:18:10 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ HttpResponse StaticFileHandler::handleDelete(const Context& context)
 	if (HttpResponse::checkStatusRange(status) != STATUS_SUCCESS)
 		return (HttpResponse::createErrorResponse(status, context));
 	
-	// TODO: check logic for delete delete
+	// TODO: check logic for delete
 	_setRelativePath(_buildPathWithUri(context));
 	if (isFile(_relativePath) || isDir(_relativePath))
 	{
@@ -137,10 +137,7 @@ HttpResponse StaticFileHandler::handleCgiPost(const Context& context)
 
 ////////////////////////////////////////////////////////////////////////////////
 HttpResponse	StaticFileHandler::_processUploadFile(const Context& context)
-{
-
-	std::cout << "TEST | body type: " << context.getRequest().getBodyType() << std::endl;
-	
+{	
 	HttpRequest::e_body_type bodyType = context.getRequest().getBodyType();
 	if (bodyType == HttpRequest::FORM_DATA)
 		return (_handleFormDataBody(context));
@@ -153,9 +150,6 @@ HttpResponse StaticFileHandler::_handleFormDataBody(const Context& context)
 
 	if (!_validateMimeType(formData.getFilename()))
 		return (HttpResponse::forbidden_403(context));
-
-	std::cout << CYAN << formData << RESET << std::endl;
-
 	if (!formData.isValid())
 		return (HttpResponse::badRequest_400(context));
 	if (formData.getFilename().empty())

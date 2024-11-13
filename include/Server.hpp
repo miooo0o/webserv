@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sanghupa <sanghupa@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:46 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/10/30 23:05:09 by sanghupa         ###   ########.fr       */
+/*   Updated: 2024/11/13 15:24:21 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,10 @@ class	Server
 
 		Config&						_config;
 		std::vector<ServerConfig*>	_serverConfigs;
+
+	private: // TODO: update / delete 
+	ssize_t	_receiveData(int target,std::string& str);
+
 };
 
 #endif

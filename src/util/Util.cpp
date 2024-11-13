@@ -321,6 +321,9 @@ std::string FormData::_extractReqeustLine(const std::string& requestBody, const 
 	std::string::size_type pos = requestBody.find("\r\n", fullBoundary.size()) + 2;
 	std::string::size_type nextPos = requestBody.find(fullBoundary, pos);
 
+	std::cout << "fullBoundary: " << fullBoundary << std::endl;
+	std::cout << "pos: " << pos << std::endl;
+	std::cout << "nextPos: " << nextPos << std::endl;
 	if (!_hasOneData(pos, nextPos))
 		return ("");
 	return (requestBody.substr(pos, nextPos - pos));
@@ -396,22 +399,19 @@ std::string FormData::getContentType() const
 
 
 
-std::ostream& operator<<(std::ostream& os, const FormData& formData) {
-    // _disposition 출력
+std::ostream& operator<<(std::ostream& os, const FormData& formData)
+{
     os << "Disposition:" << std::endl;
     for (std::map<std::string, std::string>::const_iterator it = formData.getDisposition().begin();
-         it != formData.getDisposition().end(); ++it) {
+         it != formData.getDisposition().end(); ++it)
+	{
         os << "  " << it->first << ": " << it->second << std::endl;
     }
-
-    // _headers 출력
     os << "Headers:" << std::endl;
     for (std::map<std::string, std::string>::const_iterator it = formData.getHeaders().begin();
-         it != formData.getHeaders().end(); ++it) {
+         it != formData.getHeaders().end(); ++it)
         os << "  " << it->first << ": " << it->second << std::endl;
-    }
 
-    // _content, _boundary, _isValid 출력
     os << "Content: " << formData.getContent() << std::endl;
     os << "Boundary: " << formData.getBoundary() << std::endl;
     os << "Is Valid: " << (formData.isValid() ? "true" : "false") << std::endl;
