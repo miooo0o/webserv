@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/12 16:27:51 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 02:05:51 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,11 +61,11 @@ private:
 	int				_validateGetHeaders(const std::map<std::string, std::string>& headers) const;
 	int				_validatePostHeaders(const Context& context, const std::map<std::string, std::string>& headers) const;
 	int				_validateDeleteHeaders(const std::map<std::string, std::string>& headers) const;
+	bool			_validateMimeType(const std::string& path) const;
 	
 	// Handle specific request types, return HttpResponse
-	HttpResponse 	_processBodyBasedOnType(const Context& context);
-	HttpResponse 	_handleRawBody(const Context& context);
-	HttpResponse 	_handleChunkedBody(const Context& context);
+	HttpResponse 	_processUploadFile(const Context& context);
+
 	HttpResponse 	_handleFormDataBody(const Context& context);
 	HttpResponse	_handleDirListing(const Context& context);
 	HttpResponse	_handleDirRequest(const Context& context);
@@ -88,13 +88,13 @@ private:
 	std::string		_buildPathWithIndex(const Context& context) const;
 	std::string		_buildPathWithUri(const Context& context) const;
 	std::string		_buildUploadPath(const Context& context) const;
+	std::string		_buildFilePath(const std::string& fileName) const;
+
 	void			_setRelativePath(const std::string& resolvedPath);
 
 	// FormData parsing methods : multipart/form-data
-	std::string 				_extractBoundary(const std::map<std::string, std::string> headers) const;
-	std::map<std::string, std::vector<std::string> > \
-								_splitByBoundary(const std::string& body, const std::string& boundary) const;
-
+	bool isValidRequest(const std::map<std::string, std::string>& headers, const std::string& body) const;
+    bool writeFile(const std::string& filePath, const std::string& content) const;
 };
 
 #endif

@@ -3,9 +3,32 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
+#include "HttpRequest.hpp"
 
 
-// FIXME: error handling or copy from cpp06
+////////////////////////////////////////////////////////////////////////////////
+/// trim
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Trims the string by removing leading and trailing whitespace.
+/// @details `WHITESPACE`: Whitespace includes: space, tab, carriage return, and newline.
+/// @param str `const std::string&`, The string to be trimmed.
+/// @return The trimmed string.
+std::string trim(const std::string& str)
+{
+	std::string::size_type first = str.find_first_not_of(WHITESPACE);
+	if (first == std::string::npos)
+		return ("");
+	std::string::size_type last = str.find_last_not_of(WHITESPACE);
+	if (last == std::string::npos)
+		return ("");
+	return (str.substr(first, last - first + 1));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// toString
+////////////////////////////////////////////////////////////////////////////////
+
 std::string	toString(const int value)
 {
 	std::ostringstream oss;
@@ -42,6 +65,8 @@ size_t		toSizeT(const std::string& value)
 	iss >> result;
 	return (result);
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Utility functions: File, Directory
@@ -139,34 +164,257 @@ bool	deleteFileOrDir(const std::string& path)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// MultipartParser
+/// FormData
 ////////////////////////////////////////////////////////////////////////////////
-//
 
-std::string	MultipartParser::_extractBoundary(const std::string& headers)
+FormData::FormData(const HttpRequest& request)
+	: _content(""), _boundary(""), _isValid(false)
 {
-	std::string::size_type	pos = headers.find("boundary=");
-	std::string				boundary;
-	if (pos == std::string::npos)
-		return ("");
-	boundary = headers.substr(pos + 9);
-	boundary = boundary.substr(0, boundary.find("\r\n"));
-	
-	return (boundary);
+	_content.clear();
+	_parse(request.getBody(), request.getContentType());
 }
 
-std::vector<std::string>	MultipartParser::_splitByBoundary(const std::string& body, const std::string& boundary)
+FormData::~FormData()
 {
-	std::vector<std::string>	parts;
-	std::string::size_type		pos = 0;
-	std::string::size_type		nextPos = 0;
+}
 
-	while ((nextPos = body.find(boundary, pos)) != std::string::npos)
+////////////////////////////////////////////////////////////////////////////////
+
+void	FormData::_parse(std::string body, const std::string& contentType)
+{
+	if (body.empty() || contentType.empty())
+		return ;
+	if (!_extractBoundary(contentType))
+		return ;
+	_isValid = _parseRequest(body, _boundary);
+
+}
+
+bool FormData::_parseRequest(const std::string& body, const std::string& boundary)
+{
+	std::string		requestLine;
+	FormData::Parts parts;
+	if (!_checkBoundary(body, boundary))
+		return (false);
+	requestLine = _extractReqeustLine(body, boundary);
+	if (requestLine.empty())
+		return (false);
+	parts = _splitToParts(requestLine);
+
+	return (_getFormData(parts));
+}
+
+FormData::Parts	FormData::_splitToParts(const std::string& requestLine)
+{
+	std::istringstream	iss(requestLine);
+    FormData::Parts		parts;
+    std::string			line;
+
+    if (std::getline(iss, line) && line.find("Content-Disposition") != std::string::npos)
+        parts.disposition = line;
+	else
+		return (parts);
+	while (std::getline(iss, line) && line != "\r")
+		parts.headerLine += line + "\n";
+	while (std::getline(iss, line))
+		parts.body += line + "\n";
+    return (parts);
+}
+
+bool FormData::_getFormData(FormData::Parts& parts)
+{
+	if (parts.disposition.empty() || parts.headerLine.empty() || parts.body.empty())
+		return (false);
+	if (!_parseContentDisposition(parts.disposition))
+		return (false);
+	if (!_parseHeaders(parts.headerLine))
+		return (false);
+	_content = parts.body;
+	return (true);
+}
+
+bool FormData::_parseHeaders(const std::string& line)
+{
+    std::map<std::string, std::string> headers;
+    std::istringstream iss(line);
+    std::string headerLine;
+
+    while (std::getline(iss, headerLine))
+    {
+        std::string::size_type colonPos = headerLine.find(':');
+		std::string key		= trim(headerLine.substr(0, colonPos));
+        std::string value	= trim(headerLine.substr(colonPos + 1));
+        if (!key.empty() && !value.empty())
+            headers[key] = value;
+    }
+    if (headers.empty() || headers.find("Content-Type") == headers.end())
+        return (false);
+    _headers = headers;
+    return (true);
+}
+
+bool FormData::_parseContentDisposition(const std::string& line)
+{
+    std::map<std::string, std::string> disposition;
+    std::istringstream iss(line);
+    std::string token;
+
+    std::getline(iss, token, ';');
+    while (std::getline(iss, token, ';'))
+    {
+        token = trim(token);
+        std::string::size_type equalPos = token.find('=');
+        if (equalPos != std::string::npos)
+        {
+            std::string key = trim(token.substr(0, equalPos));
+            std::string value = trim(token.substr(equalPos + 1));
+            if (!value.empty() && value[0] == '"' && value[value.size() - 1] == '"')
+                value = value.substr(1, value.size() - 2);
+            disposition[key] = value;
+        }
+    }
+    if (disposition.find("name") == disposition.end())
+        return false;
+    _disposition = disposition;
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool FormData::_extractBoundary(const std::string& contentType)
+{
+	if (!_hasBoundary(contentType))
+		return (false);
+	_boundary = _trimBoundary(_getBoundaryString(contentType));
+	return (!_boundary.empty());
+}
+
+bool	FormData::_hasBoundary(const std::string& contentType)
+{
+	if (contentType.empty())
+		return (false);
+	return (contentType.find("boundary=") != std::string::npos);
+}
+
+std::string	FormData::_getBoundaryString(const std::string& contentType)
+{
+	const std::string		boundaryPrefix = "boundary=";
+	std::string::size_type	pos = contentType.find(boundaryPrefix);
+	return (pos == std::string::npos ? "" : contentType.substr(pos + boundaryPrefix.length()));
+}
+
+std::string FormData::_trimBoundary(const std::string& boundary)
+{
+	std::string::size_type endPos = boundary.find("\r\n");
+	return (endPos != std::string::npos ? boundary.substr(0, endPos) : boundary);
+}
+
+bool FormData::_checkBoundary(const std::string& body, const std::string& boundary)
+{
+	std::string fullBoundary = "--" + boundary;
+	return body.find(fullBoundary) == 0;
+}
+
+std::string FormData::_extractReqeustLine(const std::string& requestBody, const std::string& boundary)
+{
+	std::string fullBoundary = "--" + boundary;
+	std::string::size_type pos = requestBody.find("\r\n", fullBoundary.size()) + 2;
+	std::string::size_type nextPos = requestBody.find(fullBoundary, pos);
+
+	if (!_hasOneData(pos, nextPos))
+		return ("");
+	return (requestBody.substr(pos, nextPos - pos));
+}
+
+bool FormData::_isEndBoundary(const std::string& body, const std::string& boundary)
+{
+	std::string fullBoundary	= "--" + boundary;
+	std::string endBoundary		= fullBoundary + "--";
+	std::string::size_type pos = body.find(endBoundary, body.find(fullBoundary) + fullBoundary.size());
+	return (pos != std::string::npos);
+}
+
+bool	FormData::_hasOneData(std::string::size_type pos, std::string::size_type nextPos)
+{
+	return (pos != std::string::npos && nextPos != std::string::npos);
+}
+
+std::string FormData::clearFileName(const std::string& fileName)
+{
+	char replacement = REPLACEMENT_FILENAME_CHAR;
+	std::string cleanedFileName = fileName;
+	if (fileName.empty())
+		return ("");
+	for (std::string::size_type i = 0; i < cleanedFileName.size(); ++i)
 	{
-		parts.push_back(body.substr(pos, nextPos - pos));
-		pos = nextPos + boundary.size();
+		if (std::isspace(cleanedFileName[i]))
+			cleanedFileName[i] = replacement;
 	}
-	if (pos < body.size())
-		parts.push_back(body.substr(pos));
-	return (parts);
+	return (cleanedFileName);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const std::map<std::string, std::string>& FormData::getDisposition() const
+{
+	return (_disposition);
+}
+
+const std::map<std::string, std::string>& FormData::getHeaders() const
+{
+	return (_headers);
+}
+
+const std::string& FormData::getContent() const
+{
+	return (_content);
+}
+
+const std::string& FormData::getBoundary() const
+{
+	return (_boundary);
+}
+
+bool FormData::isValid() const
+{
+	return (_isValid);
+}
+
+std::string FormData::getFilename() const
+{
+	std::map<std::string, std::string>::const_iterator it = \
+					 _disposition.find("filename");
+	return ((it != _disposition.end()) ? it->second : "");
+}
+
+std::string FormData::getContentType() const
+{
+	std::map<std::string, std::string>::const_iterator it = \
+					 _headers.find("Content-Type");
+	return ((it != _headers.end()) ? it->second : "");
+}
+
+
+
+std::ostream& operator<<(std::ostream& os, const FormData& formData) {
+    // _disposition 출력
+    os << "Disposition:" << std::endl;
+    for (std::map<std::string, std::string>::const_iterator it = formData.getDisposition().begin();
+         it != formData.getDisposition().end(); ++it) {
+        os << "  " << it->first << ": " << it->second << std::endl;
+    }
+
+    // _headers 출력
+    os << "Headers:" << std::endl;
+    for (std::map<std::string, std::string>::const_iterator it = formData.getHeaders().begin();
+         it != formData.getHeaders().end(); ++it) {
+        os << "  " << it->first << ": " << it->second << std::endl;
+    }
+
+    // _content, _boundary, _isValid 출력
+    os << "Content: " << formData.getContent() << std::endl;
+    os << "Boundary: " << formData.getBoundary() << std::endl;
+    os << "Is Valid: " << (formData.isValid() ? "true" : "false") << std::endl;
+
+    return os;
 }

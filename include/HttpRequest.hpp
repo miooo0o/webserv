@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/08 18:36:38 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 01:35:25 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,6 @@
 
 class HttpResponse;
 
-
-# define WHITESPACE	" \t\r\n"
 # define NOT_SET	0
 
 struct ReadedLines
@@ -59,6 +57,7 @@ public:
 	std::map<std::string, std::string>	getQueryStringsMap() const;
 	std::vector<std::string>			getQueryStrings() const;
 	size_t								getContentLength() const;
+	std::string							getContentType() const;
 	
 	void								setUri(const std::string& uri);
 	void								setMethod(const std::string& method);
@@ -73,7 +72,6 @@ public:
 	bool								hasBody() const;
 
 	bool								isConnectionClose() const;
-	static std::string					trim(const std::string& str);
 	
 private:
 	std::string												_method;		// GET, POST, DELETE

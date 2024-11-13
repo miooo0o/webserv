@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/09 12:50:50 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 01:45:46 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,7 +103,6 @@ ReadedLines HttpRequest::_splitRequestData(const std::string& requestData)
 
 	if (requestData.empty())
 		return (data);
-
 	if (!std::getline(iss, readline))
 		return (data);
 	data.request = readline;
@@ -280,22 +279,6 @@ bool HttpRequest::_parseHeaders(const std::vector<std::string> &headerLines)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief Trims the string by removing leading and trailing whitespace.
-/// @details `WHITESPACE`: Whitespace includes: space, tab, carriage return, and newline.
-/// @param str `const std::string&`, The string to be trimmed.
-/// @return The trimmed string.
-std::string HttpRequest::trim(const std::string& str)
-{
-	std::string::size_type first = str.find_first_not_of(WHITESPACE);
-	if (first == std::string::npos)
-		return ("");
-	std::string::size_type last = str.find_last_not_of(WHITESPACE);
-	if (last == std::string::npos)
-		return ("");
-	return (str.substr(first, last - first + 1));
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /// Checker functions
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -346,6 +329,13 @@ HttpRequest::e_body_type	HttpRequest::getBodyType() const
 	return (_type);
 }
 
+std::string HttpRequest::getContentType() const
+{
+	std::map<std::string, std::string>::const_iterator it = _headers.find("Content-Type");
+	if (it != _headers.end())
+		return (it->second);
+	return ("");
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Setters

@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/12 17:08:20 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 02:40:03 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -241,6 +241,15 @@ void	HttpResponse::setStatusCode(int code)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+HttpResponse HttpResponse::response_withMessage
+			(StaticMethod method, const Context& context, const std::string& message)
+{
+	HttpResponse resp = method(context);
+	resp.setBody(resp._generateHtmlBody(message));
+	return (resp);
+}
+
 /// @brief Generates a simple HTML response for a given HTTP status code.
 /// @param code The HTTP status code for which to generate the response. 
 /// @return Return the generated HTML response.
@@ -263,6 +272,20 @@ std::string	HttpResponse::_generateHtmlBody()
 		"<html>"
 		"<body>"
 		"<h1>" + toString(getStatusCode()) + " " + getStatusMessage() + "</h1>"
+		"</body>"
+		"</html>";
+	return (body);
+}
+
+std::string	HttpResponse::_generateHtmlBody(const std::string& message)
+{
+	if (toString(getStatusCode()).empty() || getStatusMessage().empty())
+		return ("");
+	std::string body = 
+		"<html>"
+		"<body>"
+		"<h1>" + toString(getStatusCode()) + " " + getStatusMessage() + "</h1>"
+		+ message +
 		"</body>"
 		"</html>";
 	return (body);
@@ -378,11 +401,14 @@ HttpResponse	HttpResponse::success_200(const Context& context)
 	return (resp);
 }
 
-HttpResponse	HttpResponse::success_200(const Context& context, const std::map<std::string, std::string>& body)
+HttpResponse	HttpResponse::created_201(const Context& context, const std::string& fileName)
 {
-	(void) body;
-	HttpResponse resp(context);
-	resp.setBody(resp._generateHtmlBody());
+	HttpResponse	resp(context);
+	std::string		message;
+
+	message = "<p>File uploaded successfully: " + fileName + "</p>";
+	// message += "<p>Location: " + context.getServer().upload_dir + "/" + fileName + "</p>";
+	resp.setBody(resp._generateHtmlBody(message));
 	setDefaultHeaders(resp);
 	return (resp);
 }

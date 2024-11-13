@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/12 17:39:48 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/12 22:50:13 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,8 @@ public:
 	HttpResponse& operator=(const HttpResponse& other);
 	~HttpResponse();
 	
+	typedef HttpResponse (*StaticMethod)(const Context&);
+	
 	void					setStatusCode(int code);
 	void					setStatusCode(int code, const std::string statusMessage);
 	void					setHeader(const std::string key, const std::string value);
@@ -80,8 +82,10 @@ public:
 	static HttpResponse		redirect_301(const Context& context, const std::string& location);
 
 	static HttpResponse		success_200(const Context& context);
-	static HttpResponse		success_200(const Context& context, const std::map<std::string, std::string>& body);
-
+	static HttpResponse		created_201(const Context& context, const std::string& location);
+	
+	static HttpResponse		response_withMessage(StaticMethod method, const Context& context, const std::string& body);
+	
 	static e_status			checkStatusRange(int code);
 
 private:
@@ -95,6 +99,7 @@ private:
 	std::string							_getHeadersString() const;
 	void								_fileToBody(const std::string& filePath);
 	std::string							_generateHtmlBody();
+	std::string							_generateHtmlBody(const std::string& message);
 	void								_setDefaultHeadersImpl();
 
 	static const std::map<int, std::string>&	_staticInitStatusMap();

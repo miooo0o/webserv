@@ -6,7 +6,7 @@
 /*   By: minakim <minakim@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/30 16:23:00 by sanghupa          #+#    #+#             */
-/*   Updated: 2024/11/12 16:37:54 by minakim          ###   ########.fr       */
+/*   Updated: 2024/11/13 02:34:22 by minakim          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@
 
 
 StaticFileHandler::StaticFileHandler()
-	: _relativePath("")
+	: _relativePath(""), _mimeTypes()
 {
 }
 
@@ -87,7 +87,7 @@ HttpResponse StaticFileHandler::handlePost(const Context& context)
 		return (HttpResponse::createErrorResponse(status, context));
 	_setRelativePath(_buildUploadPath(context));
 	if (createDir(_relativePath))
-		return (_processBodyBasedOnType(context));
+		return (_processUploadFile(context));
 	return (HttpResponse::notFound_404(context));
 }
 
@@ -136,38 +136,44 @@ HttpResponse StaticFileHandler::handleCgiPost(const Context& context)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-HttpResponse	StaticFileHandler::_processBodyBasedOnType(const Context& context)
+HttpResponse	StaticFileHandler::_processUploadFile(const Context& context)
 {
 
 	std::cout << "TEST | body type: " << context.getRequest().getBodyType() << std::endl;
 	
 	HttpRequest::e_body_type bodyType = context.getRequest().getBodyType();
-
-	if (bodyType == HttpRequest::RAW)
-		return (_handleRawBody(context));
-	else if (bodyType == HttpRequest::CHUNKED)
-		return (_handleChunkedBody(context));
-	else if (bodyType == HttpRequest::FORM_DATA)
+	if (bodyType == HttpRequest::FORM_DATA)
 		return (_handleFormDataBody(context));
 	return (HttpResponse::internalServerError_500(context));
 }
 
-HttpResponse StaticFileHandler::_handleRawBody(const Context& context)
-{
-	(void)context;
-	return (HttpResponse::notImplemented_501(context));
-}
-
-HttpResponse StaticFileHandler::_handleChunkedBody(const Context& context)
-{
-	(void)context;
-	return (HttpResponse::notImplemented_501(context));
-
-}
-
 HttpResponse StaticFileHandler::_handleFormDataBody(const Context& context)
 {
-	return (HttpResponse::notImplemented_501(context));
+    FormData formData(context.getRequest());
+
+	if (!_validateMimeType(formData.getFilename()))
+		return (HttpResponse::forbidden_403(context));
+
+	std::cout << CYAN << formData << RESET << std::endl;
+
+	if (!formData.isValid())
+		return (HttpResponse::badRequest_400(context));
+	if (formData.getFilename().empty())
+		return (HttpResponse::badRequest_400(context));
+    std::string filePath = _buildFilePath(formData.getFilename());
+    if (writeFile(filePath, formData.getContent()))
+        return (HttpResponse::created_201(context, FormData::clearFileName(formData.getFilename())));
+    return (HttpResponse::internalServerError_500(context));
+}
+
+bool StaticFileHandler::writeFile(const std::string& filePath, const std::string& content) const
+{
+	std::ofstream file(filePath.c_str());
+	if (!file.is_open())
+		return (false);
+	file << content;
+	file.close();
+	return (true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -302,9 +308,15 @@ std::string StaticFileHandler::_buildUploadPath(const Context& context) const
 	std::string uri = context.getRequest().getUri();
 	std::string uploadPath = context.getLocation().getUploadPath();
 
-	std::cout << GREEN << "uploadRoot: " << uploadRoot << " uri: " << uri 
+	std::cout << GREEN << "TEST | uploadRoot: " << uploadRoot << " uri: " << uri 
 	<< "\n" << "." + serverRoot + uploadRoot << RESET << std::endl;
+
 	return ("." + serverRoot + uploadRoot);
+}
+
+std::string StaticFileHandler::_buildFilePath(const std::string& fileName) const
+{
+	return (_relativePath + "/" + FormData::clearFileName(fileName));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -340,12 +352,12 @@ std::string	StaticFileHandler::_genDirListingHtml(const std::string& path) const
 	std::string			body;
 
 	html.clear();
-    html << "<html><head><title>Directory Listing</title></head><body>";
-    html << "<h2>Directory Listing for " << path << "</h2><ul>";
-    
-    html << _genListing(path);
+	html << "<html><head><title>Directory Listing</title></head><body>";
+	html << "<h2>Directory Listing for " << path << "</h2><ul>";
+	
+	html << _genListing(path);
 
-    html << "</ul></body></html>";
+	html << "</ul></body></html>";
 	body = html.str();
 	return (body);
 }
@@ -353,7 +365,7 @@ std::string	StaticFileHandler::_genDirListingHtml(const std::string& path) const
 std::string StaticFileHandler::_genListing(const std::string& path) const
 {
 	DIR*			dir = opendir(path.c_str());
-    struct dirent*	entry;
+	struct dirent*	entry;
 	std::string		listing;
 
 	if (dir == NULL)
@@ -449,7 +461,17 @@ void	StaticFileHandler::_initMimeTypes()
 		_mimeTypes.insert(std::make_pair("gif", "image/gif"));
 		_mimeTypes.insert(std::make_pair("txt", "text/plain"));
 	}
-} 
+}
+
+bool StaticFileHandler::_validateMimeType(const std::string& filename) const
+{
+	
+	std::string ext = filename.substr(filename.find_last_of(".") + 1);
+	std::map<std::string, std::string>::const_iterator it = _mimeTypes.find(ext);
+	if (it == _mimeTypes.end())
+		return (false);
+	return (true);
+}
 
 /// @brief Returns the MIME type of a given file based on its file extension.
 /// @example resolveMimeType("index.html") ext = "html", and returns "text/html"

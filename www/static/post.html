@@ -3,55 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Non-CGI POST Request with FormData</title>
+    <title>File Upload</title>
 </head>
 <body>
-    <h1>Submit Form Data</h1>
-    <form id="dataForm" action="/submit" method="post" enctype="multipart/form-data">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-        <br><br>
-
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <br><br>
-
-        <label for="message">Message:</label>
-        <textarea id="message" name="message" required></textarea>
-        <br><br>
-
-        <label for="file">Upload File:</label>
+    <h1>Upload a File</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <label for="file">Choose a file:</label>
         <input type="file" id="file" name="file" required>
         <br><br>
-
-        <button type="button" onclick="sendRequest()">Submit</button>
+        <button type="submit">Upload</button>
     </form>
-
-    <script>
-        function sendRequest() {
-            const form = document.getElementById('dataForm');
-            const formData = new FormData(form);
-
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.text();
-                } else {
-                    throw new Error('Request failed');
-                }
-            })
-            .then(data => {
-                console.log("Response:", data);
-                alert("Data submitted successfully!");
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Submission failed.");
-            });
-        }
-    </script>
 </body>
 </html>
